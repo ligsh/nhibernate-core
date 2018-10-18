@@ -38,7 +38,9 @@ namespace NHibernate.Persister.Entity
 	/// <remarks>
 	/// May be considered an immutable view of the mapping object
 	/// </remarks>
-	public abstract partial class AbstractEntityPersister : IOuterJoinLoadable, IQueryable, IClassMetadata, IUniqueKeyLoadable, ISqlLoadable, ILazyPropertyInitializer, IPostInsertIdentityPersister, ILockable
+	public abstract partial class AbstractEntityPersister : IOuterJoinLoadable, IQueryable, IClassMetadata,
+		IUniqueKeyLoadable, ISqlLoadable, ILazyPropertyInitializer, IPostInsertIdentityPersister, ILockable,
+		ISupportSelectModeJoinable
 	{
 		#region InclusionChecker
 
@@ -635,6 +637,8 @@ namespace NHibernate.Persister.Entity
 			get { return batchSize > 1; }
 		}
 
+		public int BatchSize => batchSize;
+
 		public virtual string[] IdentifierColumnNames
 		{
 			get { return rootTableKeyColumnNames; }
@@ -755,8 +759,8 @@ namespace NHibernate.Persister.Entity
 			{
 				if (identitySelectString == null)
 					identitySelectString =
-						Factory.Dialect.GetIdentitySelectString(GetTableName(0), GetKeyColumns(0)[0],
-																										IdentifierType.SqlTypes(Factory)[0].DbType);
+						Factory.Dialect.GetIdentitySelectString(GetKeyColumns(0)[0], GetTableName(0),
+						                                        IdentifierType.SqlTypes(Factory)[0].DbType);
 				return identitySelectString;
 			}
 		}
@@ -1362,7 +1366,12 @@ namespace NHibernate.Persister.Entity
 
 		public string SelectFragment(string alias, string suffix)
 		{
-			return IdentifierSelectFragment(alias, suffix) + PropertySelectFragment(alias, suffix, false);
+			return SelectFragment(alias, suffix, false);
+		}
+
+		public string SelectFragment(string alias, string suffix, bool fetchLazyProperties)
+		{
+			return IdentifierSelectFragment(alias, suffix) + PropertySelectFragment(alias, suffix, fetchLazyProperties);
 		}
 
 		public string[] GetIdentifierAliases(string suffix)
@@ -3788,34 +3797,24 @@ namespace NHibernate.Persister.Entity
 				return true;
 			}
 
-            // check the id unsaved-value
-            // We do this first so we don't have to hydrate the version property if the id property already gives us the info we need (NH-3505).
-            bool? result2 = entityMetamodel.IdentifierProperty.UnsavedValue.IsUnsaved(id);
-            if (result2.HasValue)
-            {
-                if (IdentifierGenerator is Assigned)
-                {
-                    // if using assigned identifier, we can only make assumptions
-                    // if the value is a known unsaved-value
-                    if (result2.Value)
-                        return true;
-                }
-                else
-                {
-                    return result2;
-                }
-            }
-
-            // check the version unsaved-value, if appropriate
-            if (IsVersioned)
-            {
-                object version = GetVersion(entity);
-                bool? result = entityMetamodel.VersionProperty.UnsavedValue.IsUnsaved(version);
-                if (result.HasValue)
-                {
-                    return result;
-                }
-            }
+			// check the id unsaved-value
+			// We do this first so we don't have to hydrate the version property if the id property already gives us the info we need (NH-3505).
+			bool? result2 = entityMetamodel.IdentifierProperty.UnsavedValue.IsUnsaved(id);
+			if (result2.HasValue)
+			{
+				return result2;
+			}
+	
+			// check the version unsaved-value, if appropriate
+			if (IsVersioned)
+			{
+				object version = GetVersion(entity);
+				bool? result = entityMetamodel.VersionProperty.UnsavedValue.IsUnsaved(version);
+				if (result.HasValue)
+				{
+					return result;
+				}
+			}
 
 			// check to see if it is in the second-level cache
 			if (HasCache && session.CacheMode.HasFlag(CacheMode.Get))
@@ -3908,10 +3907,20 @@ namespace NHibernate.Persister.Entity
 			return StringHelper.Unqualify(GetType().FullName) + '(' + entityMetamodel.Name + ')';
 		}
 
+		// 6.0 TODO: Remove (to inline usages)
+		// Since v5.2
+		[Obsolete("Use overload taking includeLazyProperties parameter")]
 		public string SelectFragment(IJoinable rhs, string rhsAlias, string lhsAlias,
 			string entitySuffix, string collectionSuffix, bool includeCollectionColumns)
 		{
-			return SelectFragment(lhsAlias, entitySuffix);
+			return SelectFragment(rhs, rhsAlias, lhsAlias, entitySuffix, collectionSuffix, includeCollectionColumns, false);
+		}
+
+		public string SelectFragment(
+			IJoinable rhs, string rhsAlias, string lhsAlias, string entitySuffix, string collectionSuffix,
+			bool includeCollectionColumns, bool includeLazyProperties)
+		{
+			return SelectFragment(lhsAlias, entitySuffix, includeLazyProperties);
 		}
 
 		public bool IsInstrumented

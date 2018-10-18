@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <Description>An object persistence library for relational databases.</Description>
-    <TargetFrameworks>netstandard2.0;net461;netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks>$(NhLibTargetFrameworks)</TargetFrameworks>
     <NoWarn>$(NoWarn);3001;3002;3003;3005;1591;419</NoWarn>
     <SignAssembly>True</SignAssembly>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
@@ -40,9 +40,9 @@
       <PrivateAssets>All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Antlr3.Runtime" Version="[3.5.1, 4.0)" />
-    <PackageReference Include="Iesi.Collections" Version="[4.0.3, 5.0)" />
-    <PackageReference Include="Remotion.Linq" Version="[2.1.2, 3.0)" />
-    <PackageReference Include="Remotion.Linq.EagerFetching" Version="[2.1.0, 3.0)" />
+    <PackageReference Include="Iesi.Collections" Version="[4.0.4, 5.0)" />
+    <PackageReference Include="Remotion.Linq" Version="[2.2.0, 3.0)" />
+    <PackageReference Include="Remotion.Linq.EagerFetching" Version="[2.2.0, 3.0)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
@@ -52,15 +52,11 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
-    <PackageReference Include="System.ServiceModel.Primitives" Version="4.4.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.1" />
-    <PackageReference Include="System.Security.Permissions" Version="4.4.1" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="System.ServiceModel.Primitives" Version="4.4.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.1" />
-    <PackageReference Include="System.Security.Permissions" Version="4.4.1" />
     <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
   </ItemGroup>

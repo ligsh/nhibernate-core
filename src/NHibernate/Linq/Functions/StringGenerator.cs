@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using NHibernate.Hql.Ast;
@@ -182,6 +183,24 @@ namespace NHibernate.Linq.Functions
 			return treeBuilder.MethodCall("substring", stringExpr, start, length);
 		}
 	}
+	
+	public class GetCharsGenerator : BaseHqlGeneratorForMethod
+	{
+		public GetCharsGenerator()
+		{
+			SupportedMethods = new[]
+			{
+				ReflectHelper.GetMethod<string, char>(s => s[0])
+			};
+		}
+
+		public override HqlTreeNode BuildHql(MethodInfo method, Expression targetObject, ReadOnlyCollection<Expression> arguments, HqlTreeBuilder treeBuilder, IHqlExpressionVisitor visitor)
+		{
+			var expression = visitor.Visit(targetObject).AsExpression();
+			var index = treeBuilder.Add(visitor.Visit(arguments[0]).AsExpression(), treeBuilder.Constant(1));
+			return treeBuilder.MethodCall("substring", expression, index, treeBuilder.Constant(1));
+		}
+	}
 
 	public class IndexOfGenerator : BaseHqlGeneratorForMethod
 	{
@@ -241,18 +260,7 @@ namespace NHibernate.Linq.Functions
 	{
 		public TrimGenerator()
 		{
-			SupportedMethods = new HashSet<MethodInfo>
-			{
-				ReflectHelper.GetMethodDefinition<string>(s => s.Trim()),
-				ReflectHelper.GetMethodDefinition<string>(s => s.Trim('a')),
-				ReflectHelper.GetMethodDefinition<string>(s => s.Trim('a', 'a')),
-				ReflectHelper.GetMethodDefinition<string>(s => s.TrimStart()),
-				ReflectHelper.GetMethodDefinition<string>(s => s.TrimStart('a')),
-				ReflectHelper.GetMethodDefinition<string>(s => s.TrimStart('a', 'a')),
-				ReflectHelper.GetMethodDefinition<string>(s => s.TrimEnd()),
-				ReflectHelper.GetMethodDefinition<string>(s => s.TrimEnd('a')),
-				ReflectHelper.GetMethodDefinition<string>(s => s.TrimEnd('a', 'a'))
-			};
+			SupportedMethods = typeof(string).GetMethods().Where(x => new[] { "Trim", "TrimStart", "TrimEnd" }.Contains(x.Name)).ToArray();
 		}
 
 		public override HqlTreeNode BuildHql(MethodInfo method, Expression targetObject, ReadOnlyCollection<Expression> arguments, HqlTreeBuilder treeBuilder, IHqlExpressionVisitor visitor)

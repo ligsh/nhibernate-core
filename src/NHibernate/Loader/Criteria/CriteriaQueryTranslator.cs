@@ -167,7 +167,10 @@ namespace NHibernate.Loader.Criteria
 					rootCriteria.CacheRegion,
 					rootCriteria.Comment,
 					rootCriteria.LookupByNaturalKey,
-					rootCriteria.ResultTransformer);
+					rootCriteria.ResultTransformer)
+				{
+					CacheMode = rootCriteria.CacheMode
+				};
 		}
 		
 		public SqlString GetGroupBy()
@@ -815,13 +818,13 @@ namespace NHibernate.Loader.Criteria
 
 		public Parameter CreateSkipParameter(int value)
 		{
-			var typedValue = new TypedValue(NHibernateUtil.Int32, value);
+			var typedValue = new TypedValue(NHibernateUtil.Int32, value, false);
 			return NewQueryParameter("skip_", typedValue).Single();
 		}
 		
 		public Parameter CreateTakeParameter(int value)
 		{
-			var typedValue = new TypedValue(NHibernateUtil.Int32, value);
+			var typedValue = new TypedValue(NHibernateUtil.Int32, value, false);
 			return NewQueryParameter("take_",typedValue).Single();
 		}
 

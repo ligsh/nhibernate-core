@@ -2,10 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+#if NETFX
 using System.Data.SqlClient;
+#endif
 using NHibernate.AdoNet;
+using NHibernate.Dialect;
 using NHibernate.Engine;
 using NHibernate.SqlTypes;
+using NHibernate.Type;
 
 namespace NHibernate.Driver
 {
@@ -14,18 +18,35 @@ namespace NHibernate.Driver
 	/// </summary>
 	public class SqlClientDriver
 #if NETFX
-		: DriverBase, IEmbeddedBatcherFactoryProvider
+		: DriverBase,
 #else
-		: ReflectionBasedDriver
+		: ReflectionBasedDriver, 
 #endif
+			IEmbeddedBatcherFactoryProvider, IParameterAdjuster
 	{
+		// Since v5.1
+		[Obsolete("Use MsSql2000Dialect.MaxSizeForAnsiClob")]
 		public const int MaxSizeForAnsiClob = 2147483647; // int.MaxValue
+		// Since v5.1
+		[Obsolete("Use MsSql2000Dialect.MaxSizeForClob")]
 		public const int MaxSizeForClob = 1073741823; // int.MaxValue / 2
+		// Since v5.1
+		[Obsolete("Use MsSql2000Dialect.MaxSizeForBlob")]
 		public const int MaxSizeForBlob = 2147483647; // int.MaxValue
-		//http://stackoverflow.com/a/7264795/259946
+
+		///<remarks>http://stackoverflow.com/a/7264795/259946</remarks>
+		// Since v5.1
+		[Obsolete("Use MsSql2005Dialect.MaxSizeForXml")]
 		public const int MaxSizeForXml = 2147483647; // int.MaxValue
+
+		// Since v5.1
+		[Obsolete("Use MsSql2000Dialect.MaxSizeForLengthLimitedAnsiString")]
 		public const int MaxSizeForLengthLimitedAnsiString = 8000;
+		// Since v5.1
+		[Obsolete("Use MsSql2000Dialect.MaxSizeForLengthLimitedString")]
 		public const int MaxSizeForLengthLimitedString = 4000;
+		// Since v5.1
+		[Obsolete("Use MsSql2000Dialect.MaxSizeForLengthLimitedBinary")]
 		public const int MaxSizeForLengthLimitedBinary = 8000;
 		// Since v5.1
 		[Obsolete("This member has no more usages and will be removed in a future version")]
@@ -33,7 +54,11 @@ namespace NHibernate.Driver
 		// Since v5.1
 		[Obsolete("This member has no more usages and will be removed in a future version")]
 		public const byte MaxScale = 5;
+		// Since v5.1
+		[Obsolete("Use MsSql2000Dialect.MaxDateTime2")]
 		public const byte MaxDateTime2 = 8;
+		// Since v5.1
+		[Obsolete("Use MsSql2000Dialect.MaxDateTimeOffset")]
 		public const byte MaxDateTimeOffset = 10;
 
 		private Dialect.Dialect _dialect;
@@ -50,6 +75,8 @@ namespace NHibernate.Driver
 			: base("System.Data.SqlClient", "System.Data.SqlClient.SqlConnection", "System.Data.SqlClient.SqlCommand")
 		{
 		}
+
+		System.Type IEmbeddedBatcherFactoryProvider.BatcherFactoryClass => typeof(GenericBatchingBatcherFactory);
 #else
 		/// <summary>
 		/// Creates an uninitialized <see cref="DbConnection" /> object for
@@ -135,10 +162,10 @@ namespace NHibernate.Driver
 			{
 				case DbType.AnsiString:
 				case DbType.AnsiStringFixedLength:
-					dbParam.Size = IsAnsiText(dbParam, sqlType) ? MaxSizeForAnsiClob : MaxSizeForLengthLimitedAnsiString;
+					dbParam.Size = IsAnsiText(dbParam, sqlType) ? MsSql2000Dialect.MaxSizeForAnsiClob : MsSql2000Dialect.MaxSizeForLengthLimitedAnsiString;
 					break;
 				case DbType.Binary:
-					dbParam.Size = IsBlob(dbParam, sqlType) ? MaxSizeForBlob : MaxSizeForLengthLimitedBinary;
+					dbParam.Size = IsBlob(dbParam, sqlType) ? MsSql2000Dialect.MaxSizeForBlob : MsSql2000Dialect.MaxSizeForLengthLimitedBinary;
 					break;
 				case DbType.Decimal:
 					if (_dialect == null)
@@ -148,16 +175,16 @@ namespace NHibernate.Driver
 					break;
 				case DbType.String:
 				case DbType.StringFixedLength:
-					dbParam.Size = IsText(dbParam, sqlType) ? MaxSizeForClob : MaxSizeForLengthLimitedString;
+					dbParam.Size = IsText(dbParam, sqlType) ? MsSql2000Dialect.MaxSizeForClob : MsSql2000Dialect.MaxSizeForLengthLimitedString;
 					break;
 				case DbType.DateTime2:
-					dbParam.Size = MaxDateTime2;
+					dbParam.Size = MsSql2000Dialect.MaxDateTime2;
 					break;
 				case DbType.DateTimeOffset:
-					dbParam.Size = MaxDateTimeOffset;
+					dbParam.Size = MsSql2000Dialect.MaxDateTimeOffset;
 					break;
 				case DbType.Xml:
-					dbParam.Size = MaxSizeForXml;
+					dbParam.Size = MsSql2005Dialect.MaxSizeForXml;
 					break;
 			}
 
@@ -199,10 +226,10 @@ namespace NHibernate.Driver
 			{
 				case DbType.AnsiString:
 				case DbType.AnsiStringFixedLength:
-					dbParam.Size = IsAnsiText(dbParam, sqlType) ? MaxSizeForAnsiClob : MaxSizeForLengthLimitedAnsiString;
+					dbParam.Size = IsAnsiText(dbParam, sqlType) ? MsSql2000Dialect.MaxSizeForAnsiClob : MsSql2000Dialect.MaxSizeForLengthLimitedAnsiString;
 					break;
 				case DbType.Binary:
-					dbParam.Size = IsBlob(dbParam, sqlType) ? MaxSizeForBlob : MaxSizeForLengthLimitedBinary;
+					dbParam.Size = IsBlob(dbParam, sqlType) ? MsSql2000Dialect.MaxSizeForBlob : MsSql2000Dialect.MaxSizeForLengthLimitedBinary;
 					break;
 				case DbType.Decimal:
 					dbParam.Precision = MaxPrecision;
@@ -210,16 +237,16 @@ namespace NHibernate.Driver
 					break;
 				case DbType.String:
 				case DbType.StringFixedLength:
-					dbParam.Size = IsText(dbParam, sqlType) ? MaxSizeForClob : MaxSizeForLengthLimitedString;
+					dbParam.Size = IsText(dbParam, sqlType) ? MsSql2000Dialect.MaxSizeForClob : MsSql2000Dialect.MaxSizeForLengthLimitedString;
 					break;
 				case DbType.DateTime2:
-					dbParam.Size = MaxDateTime2;
+					dbParam.Size = MsSql2000Dialect.MaxDateTime2;
 					break;
 				case DbType.DateTimeOffset:
-					dbParam.Size = MaxDateTimeOffset;
+					dbParam.Size = MsSql2000Dialect.MaxDateTimeOffset;
 					break;
 				case DbType.Xml:
-					dbParam.Size = MaxSizeForXml;
+					dbParam.Size = MsSql2005Dialect.MaxSizeForXml;
 					break;
 			}
 		}
@@ -232,7 +259,7 @@ namespace NHibernate.Driver
 		/// <returns>True, if the parameter should be interpreted as a Clob, otherwise False</returns>
 		protected static bool IsAnsiText(DbParameter dbParam, SqlType sqlType)
 		{
-			return ((DbType.AnsiString == dbParam.DbType || DbType.AnsiStringFixedLength == dbParam.DbType) && sqlType.LengthDefined && (sqlType.Length > MaxSizeForLengthLimitedAnsiString));
+			return ((DbType.AnsiString == dbParam.DbType || DbType.AnsiStringFixedLength == dbParam.DbType) && sqlType.LengthDefined && (sqlType.Length > MsSql2000Dialect.MaxSizeForLengthLimitedAnsiString));
 		}
 
 		/// <summary>
@@ -243,7 +270,7 @@ namespace NHibernate.Driver
 		/// <returns>True, if the parameter should be interpreted as a Clob, otherwise False</returns>
 		protected static bool IsText(DbParameter dbParam, SqlType sqlType)
 		{
-			return (sqlType is StringClobSqlType) || ((DbType.String == dbParam.DbType || DbType.StringFixedLength == dbParam.DbType) && sqlType.LengthDefined && (sqlType.Length > MaxSizeForLengthLimitedString));
+			return (sqlType is StringClobSqlType) || ((DbType.String == dbParam.DbType || DbType.StringFixedLength == dbParam.DbType) && sqlType.LengthDefined && (sqlType.Length > MsSql2000Dialect.MaxSizeForLengthLimitedString));
 		}
 
 		/// <summary>
@@ -254,7 +281,7 @@ namespace NHibernate.Driver
 		/// <returns>True, if the parameter should be interpreted as a Blob, otherwise False</returns>
 		protected static bool IsBlob(DbParameter dbParam, SqlType sqlType)
 		{
-			return (sqlType is BinaryBlobSqlType) || ((DbType.Binary == dbParam.DbType) && sqlType.LengthDefined && (sqlType.Length > MaxSizeForLengthLimitedBinary));
+			return (sqlType is BinaryBlobSqlType) || ((DbType.Binary == dbParam.DbType) && sqlType.LengthDefined && (sqlType.Length > MsSql2000Dialect.MaxSizeForLengthLimitedBinary));
 		}
 
 
@@ -276,5 +303,23 @@ namespace NHibernate.Driver
 
 		/// <inheritdoc />
 		public override DateTime MinDate => new DateTime(1753, 1, 1);
+
+		public virtual void AdjustParameterForValue(DbParameter parameter, SqlType sqlType, object value)
+		{
+			if (value is string stringVal)
+			{
+				switch (parameter.DbType)
+				{
+					case DbType.AnsiString:
+					case DbType.AnsiStringFixedLength:
+						parameter.Size = IsAnsiText(parameter, sqlType) ? MsSql2000Dialect.MaxSizeForAnsiClob : Math.Max(stringVal.Length, sqlType.LengthDefined ? sqlType.Length : parameter.Size);
+						break;
+					case DbType.String:
+					case DbType.StringFixedLength:
+						parameter.Size = IsText(parameter, sqlType) ? MsSql2000Dialect.MaxSizeForClob : Math.Max(stringVal.Length, sqlType.LengthDefined ? sqlType.Length : parameter.Size);
+						break;
+				}
+			}
+		}
 	}
 }
